@@ -1,0 +1,13 @@
+[project]
+name = "file-upload"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.14"
+dependencies = [
+    "alembic>=1.18.3",
+    "asyncpg>=0.31.0",
+    "fastapi[standard]>=0.128.0",
+    "psycopg2>=2.9.11",
+    "sqlalchemy[asyncio]>=2.0.46",
+]
