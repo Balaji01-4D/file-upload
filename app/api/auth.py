@@ -11,7 +11,7 @@ from app.schemas.user import UserCreate, UserResponse
 userRouter = APIRouter()
 
 @userRouter.post("", response_model=UserResponse)
-async def add_user(user: UserCreate, db: AsyncSession = Depends(get_db)):
+async def register_user(user: UserCreate, db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(User).filter(User.email == user.email))
     existing_user = result.scalars().first()
 
