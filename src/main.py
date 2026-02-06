@@ -1,11 +1,13 @@
 from fastapi import FastAPI
-from app.models.enums import Message
-from app.api.auth import userRouter
+from .api import register_routes
+from dotenv import load_dotenv
+
+load_dotenv()
 
 app = FastAPI(title="file upload")
 
 @app.get("/")
 def root():
-    return {"message": Message.HELLO}
+    return {"message": "hello world"}
 
-app.include_router(userRouter, prefix="/users")
+register_routes(app)

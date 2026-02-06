@@ -2,7 +2,8 @@ from sqlalchemy.orm import declarative_base, relationship
 from sqlalchemy import Column, ForeignKey
 import uuid
 from sqlalchemy.dialects.postgresql import UUID, VARCHAR, FLOAT
-from app.database import Base
+
+from src.database.core import Base
 
 class User(Base):
     __tablename__ = 'user'

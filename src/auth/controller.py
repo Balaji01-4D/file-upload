@@ -1,4 +1,7 @@
+import datetime
+from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException
+from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from http import HTTPStatus
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
@@ -8,22 +11,30 @@ from src.users.models import User
 from . import service
 from . import models
 
-userRouter = APIRouter(
+authRouter = APIRouter(
     prefix="/auth",
     tags=["auth"]
 )
 
-@userRouter.post("/register", response_model=UserResponse)
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+
+@authRouter.post("/register", response_model=models.UserResponse)
 async def register_user(user: models.UserCreate, db: AsyncSession = Depends(get_db)):
-    is_user_exist = service.check_user_exists(db, user.email)
+    is_user_exist = await service.get_user_by_email(db, user.email)
     if is_user_exist:
         raise HTTPException(status_code=HTTPStatus.BAD_REQUEST, detail="email already existed")
 
     new_user = await service.create_user(db, user)
     return new_user
 
-@userRouter.post("/login")
-async def login_user(user: UserLogin, db: AsyncSession = Depends(get_db)):
+@authRouter.post("/token", response_model=models.Token)
+async def login_user_for_token(form_data: Annotated[OAuth2PasswordRequestForm, Depends()], db: AsyncSession = Depends(get_db)):
+    user = await service.authenticate_user(db, form_data)
+    return service.create_access_token(user.id, user.email)
 
-    if not logined_user:
-        raise HTTPException(status_code=HTTPStatus.UNAUTHORIZED, detail="user not found")
+@authRouter.get("/me", response_model=models.UserResponse)
+async def me(token: str = Depends(oauth2_scheme)):
+    email = service.verify_token(token)
+    user = await service.get_user_by_email(db, email)
+
+    return user

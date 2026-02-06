@@ -1,9 +1,10 @@
-from app.database import Base
 from datetime import datetime
 from sqlalchemy.dialects.postgresql import UUID, VARCHAR, FLOAT, TIMESTAMP
 from sqlalchemy.orm import relationship
 from sqlalchemy import Column, ForeignKey
 import uuid
+
+from src.database.core import Base
 
 class File(Base):
     __tablename__ = 'file'

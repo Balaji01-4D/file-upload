@@ -1,16 +1,18 @@
 import os
 import jwt
 from uuid import UUID
-from datetime import timedelta, timezone, datetime
-from passlib.context import CryptContext
-from fastapi.security import OAuth2PasswordBearer
-from sqlalchemy.ext.asyncio import AsyncSession
+from typing import Annotated
 from sqlalchemy import select
+from passlib.context import CryptContext
+from sqlalchemy.ext.asyncio import AsyncSession
+from datetime import timedelta, timezone, datetime
+from fastapi import HTTPException, Depends, status
+from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 
 from . import models
-from src.users.models import User
+from src.entities import User
 
-ACCESS_TOKEN_EXPIRE_MINUTES = 30
+ACCESS_TOKEN_EXPIRE_MINUTES = timedelta(weeks=2)
 JWT_ALGORITHM = 'HS256'
 
 bcrypt_context = CryptContext(schemes=['bcrypt'], deprecated='auto')
@@ -30,21 +32,24 @@ async def create_user(db: AsyncSession, user: models.UserCreate):
     return db_user
 
 
-async def check_user_exists(db: AsyncSession, email: str) -> User:
+async def get_user_by_email(db: AsyncSession, email: str) -> User:
     result = await db.execute(select(User).filter(User.email == email))
     return result.scalars().first()
 
 
-async def authenticate_user(db: AsyncSession, user_login_request: models.UserLogin) -> User | bool:
-    stmt = select(User).where(User.email == user_login_request.email)
+async def authenticate_user(db: AsyncSession, user_login_form: Annotated[OAuth2PasswordRequestForm, Depends()]) -> User | bool:
+    stmt = select(User).where(User.email == user_login_form.username)
     result = await db.execute(stmt)
 
     db_user = result.scalars().first()
-    if not db_user and not check_password(db_user.password, user_login_request.password):
-        return False
+    if not db_user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="user not found")
+
+    if not check_password(db_user.password, user_login_form.password):
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="password wrong")
     return db_user
 
-async def create_access_token(user_id: UUID, email: str, expires_delta: timedelta) -> str:
+async def create_access_token(user_id: UUID, email: str, expires_delta: timedelta | None = ACCESS_TOKEN_EXPIRE_MINUTES) -> str:
     encode = {
         'sub': email,
         'id': user_id,
@@ -52,4 +57,14 @@ async def create_access_token(user_id: UUID, email: str, expires_delta: timedelt
     }
     return jwt.encode(encode, os.getenv('JWT_SECRET'), algorithm=JWT_ALGORITHM)
 
+async def verify_token(token: str) -> str:
+    credentials_exception = HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="could not validate credentials")
+    try:
+        payload = jwt.decode(token, os.getenv('JWT_SECRET'), algorithms=JWT_ALGORITHM)
+        user_email: str = payload.get('sub')
+        if user_email is None:
+            raise credentials_exception
 
+        return user_email
+    except jwt.PyJWTError:
+        raise credentials_exception

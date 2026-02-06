@@ -15,3 +15,7 @@ class UserLogin(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     email: str
     password: str
+
+class Token(BaseModel):
+    access_token: str
+    token_type: str
