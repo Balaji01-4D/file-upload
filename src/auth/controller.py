@@ -30,11 +30,13 @@ async def register_user(user: models.UserCreate, db: AsyncSession = Depends(get_
 @authRouter.post("/token", response_model=models.Token)
 async def login_user_for_token(form_data: Annotated[OAuth2PasswordRequestForm, Depends()], db: AsyncSession = Depends(get_db)):
     user = await service.authenticate_user(db, form_data)
-    return service.create_access_token(user.id, user.email)
+    token = await service.create_access_token(user.id, user.email)
+    return models.Token(access_token=token, token_type="Bearer")
+
 
 @authRouter.get("/me", response_model=models.UserResponse)
-async def me(token: str = Depends(oauth2_scheme)):
-    email = service.verify_token(token)
+async def me(token: str = Depends(oauth2_scheme), db: AsyncSession = Depends(get_db)):
+    email = await service.verify_token(token)
     user = await service.get_user_by_email(db, email)
 
     return user

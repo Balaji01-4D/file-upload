@@ -52,7 +52,6 @@ async def authenticate_user(db: AsyncSession, user_login_form: Annotated[OAuth2P
 async def create_access_token(user_id: UUID, email: str, expires_delta: timedelta | None = ACCESS_TOKEN_EXPIRE_MINUTES) -> str:
     encode = {
         'sub': email,
-        'id': user_id,
         'exp': datetime.now(timezone.utc) + expires_delta
     }
     return jwt.encode(encode, os.getenv('JWT_SECRET'), algorithm=JWT_ALGORITHM)
