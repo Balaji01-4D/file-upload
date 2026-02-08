@@ -12,6 +12,7 @@ class File(Base):
     name = Column(VARCHAR, nullable=False)
     size = Column(FLOAT, nullable=False)
     type = Column(VARCHAR)
+    path = Column(VARCHAR, nullable=False)
     owner = Column(UUID, ForeignKey('user.id'), nullable=False)
     added_at = Column(TIMESTAMP, nullable=False, default=datetime.now)
 
