@@ -8,5 +8,6 @@ class File(BaseModel):
     name: str
     size: float
     type: str | None = None
+    path: str
     owner: UUID
     added_at: datetime | None = None
